@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
+      integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrendZone - Sepet Onayla</title>
+  </head>
+  <body onload="userInfoFunc();getHistory();getCart()">
+    <nav class="navbar">
+      <div class="container">
+        <h4 style="margin-bottom: 0"><a href="index.html" style="text-decoration: none; color: inherit">TrendZone</a></h4>
+        <div class="userInfo"></div>
+      </div>
+    </nav>
+
+    <div class="row" style="display: flex; margin: auto">
+      <div class="col-6" style="padding: 0">
+        <div class="cartContent">
+          <h5>Sepetim:</h5>
+        </div>
+      </div>
+      <div class="col-6" style="padding: 0">
+        <div class="orderInfo my-0">
+          <h6>Ücret:</h6>
+          <div class="card">
+            <div class="card-body">
+              <p id="totalPrice"></p>
+              <a class="btn btn-outline-success" onclick="applyOrder()">Siparişi Onayla</a>
+            </div>
+          </div>
+        </div>
+        <div class="orderHistory">
+          <h6>Geçmiş Siparişler:</h6>
+        </div>
+      </div>
+    </div>
+
+    <!-- logout modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="logoutModalLabel">Çıkış Yapılıyor...</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var cart = null;
+      var userInfo = null;
+      var totalPrice = 0;
+      var totalProductCount = 0;
+
+      function userInfoFunc() {
+        userInfo = JSON.parse(localStorage.getItem("loggedUser"));
+        if (!jQuery.isEmptyObject(userInfo)) {
+          $(".userInfo").append(`
+            <div style="margin: 5px 0;cursor: pointer" class="dropdown">
+              <i class="far fa-user ms-2 me-1" style="font-size: 15px; color: white"></i>
+              <span style="color: white; font-size:13px">${userInfo.username}</span>
+              <div class="dropdown-content">
+                <a href="myProfile.html">Hesabım</a>
+                <a href="#" data-bs-toggle="modal" data-bs-target="#logoutModal" onclick="logout()">Çıkış</a>
+              </div>
+            </div>
+          `);
+        } else {
+          $(".userInfo").append(`
+          <a href="register.html" class="navBtn btn btn-sm btn-outline-primary me-2">Kayıt Ol</a>
+          <a href="login.html" class="navBtn btn btn-sm btn-outline-primary">Giriş Yap</a>`);
+        }
+      }
+
+      function getCart() {
+        cart = JSON.parse(localStorage.getItem("cart"));
+        cart.map((product, index) => {
+          totalPrice += product.productPrice * product.itemCount;
+          totalProductCount += product.itemCount;
+          $(".cartContent").append(`
+          <div class="card eachProduct">
+            <div class="d-flex">
+              <img width="12%" class="my-auto mx-1" src="${product.productImage}" />
+              <div class="card-body">
+                <h5 class="card-title">${product.productName}</h5>
+                <p class="card-text">${product.productPrice}₺</p>
+                <div class="productQuantity">
+                  <a href="#" onclick="decrementValue(${index},${product.productPrice},${product.productID},${product.itemCount})">
+                    <i class="fas fa-minus-circle" style="font-size: 18px; color: black"></i>
+                  </a>
+                  <input type="number" name="quantity" value="${product.itemCount}" id=${product.productID} style="width: 30px; height: 25px"/>
+                  <a href="#" onclick="incrementValue(${index},${product.productPrice},${product.productID},${product.itemCount})">
+                    <i class="fas fa-plus-circle" style="font-size: 18px; color: black"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          `);
+        });
+        document.getElementById("totalPrice").innerHTML = "Toplam "+ totalProductCount + " adet ürün." + "<br>" + "Toplam:" + totalPrice + "₺";
+      }
+
+      function getHistory() {
+        $.get("http://localhost:8081/api/orders/getUserOrders?userID=" + userInfo.userID).then(function (data) {
+          data.map((order) => {
+            $(".orderHistory").append(`
+            <div class="card">
+              <div class="card-body">
+                <p>${order.productNames}</p>
+                <p>${order.price}₺</p>
+                <p>${order.orderDate}</p>
+              </div>
+            </div>
+          `);
+          });
+        });
+      }
+
+      function incrementValue(index, price, id, count) {
+        var value = parseInt(document.getElementById(`${id}`).value);
+        value = isNaN(value) ? 0 : value;
+        if (value < 10) {
+          value++;
+          document.getElementById(`${id}`).value = value;
+          totalPrice += price;
+          cart[index].itemCount = value;
+          totalProductCount++;
+          document.getElementById("totalPrice").innerHTML = totalProductCount + " adet ürün. Toplam:" + totalPrice + "₺";
+        }
+      }
+      function decrementValue(index, price, id, count) {
+        var value = parseInt(document.getElementById(`${id}`).value);
+        value = isNaN(value) ? 0 : value;
+        if (value > 1) {
+          value--;
+          document.getElementById(`${id}`).value = value;
+          totalPrice -= price;
+          cart[index].itemCount = value;
+          totalProductCount--;
+          document.getElementById("totalPrice").innerHTML = totalProductCount + " adet ürün. Toplam:" + totalPrice + "₺";
+        } else {
+          cart.splice(index, 1);
+          localStorage.setItem("cart", JSON.stringify(cart));
+          location.reload();
+        }
+      }
+
+      function applyOrder() {
+        var productNames = "";
+        cart.forEach((product) => {
+          productNames += product.itemCount + "x" + product.productName + ", ";
+        });
+        var orderObj = {
+          userId: userInfo.userID,
+          productNames: productNames,
+          price: totalPrice,
+        };
+        $.ajax({
+          url: "http://localhost:8081/api/orders/addNew",
+          type: "POST",
+          dataType: "json",
+          contentType: "application/json;charset=utf-8",
+          data: JSON.stringify(orderObj),
+          success: function (data) {
+            alert("Sipariş alındı");
+            window.location.reload();
+            cart = [];
+            localStorage.setItem("cart", JSON.stringify(cart));
+          },
+        });
+      }
+      function logout() {
+        userInfo = [];
+        localStorage.setItem("loggedUser", JSON.stringify(userInfo));
+        cart = [];
+        localStorage.setItem("cart", JSON.stringify(cart));
+        setTimeout(function () {
+          window.location.href = "index.html";
+        }, 2000);
+      }
+    </script>
+  </body>
+</html>

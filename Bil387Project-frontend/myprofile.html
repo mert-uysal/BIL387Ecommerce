@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
+      integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrendZone - Hesabım</title>
+  </head>
+  <body onload="userInfoFunc();getOrderHistory()">
+    <nav class="navbar">
+      <div class="container">
+        <h4 style="margin-bottom: 0"><a href="index.html" style="text-decoration: none; color: inherit">TrendZone</a></h4>
+        <div class="userLog" style="display: flex"></div>
+      </div>
+    </nav>
+
+    <div class="userInfos m-4" style="display: flex">
+      <div class="container profileInfo"><h5>Hesap Bilgileri:</h5></div>
+      <div class="d-block">
+        <h5 class="orderHisth5">Geçmiş Siparişler:</h5>
+        <div class="container profileHistory"></div>
+      </div>
+    </div>
+    <!-- delete account modal -->
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteAccountModalLabel">Hesap Silme</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">Hesabınızı Silmek İstediğinize Emin Misiniz?</div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- logout modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="logoutModalLabel">Çıkış Yapılıyor...</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var userInfo = null;
+      function userInfoFunc() {
+        userInfo = JSON.parse(localStorage.getItem("loggedUser"));
+        if (!jQuery.isEmptyObject(userInfo)) {
+          $(".userLog").append(`
+            <div style="margin: 5px 0;cursor: pointer" class="dropdown">
+              <i class="far fa-user ms-2 me-1" style="font-size: 15px; color: white"></i>
+              <span style="color: white; font-size:13px">${userInfo.username}</span>
+              <div class="dropdown-content">
+                <a href="myProfile.html">Hesabım</a>
+                <a href="#" data-bs-toggle="modal" data-bs-target="#logoutModal" onclick="logout()">Çıkış</a>
+              </div>
+            </div>
+          `);
+        } else {
+          $(".userLog").append(`
+          <a href="register.html" class="navBtn btn btn-sm btn-outline-primary me-2">Kayıt Ol</a>
+          <a href="login.html" class="navBtn btn btn-sm btn-outline-primary">Giriş Yap</a>`);
+        }
+
+        $(".profileInfo").append(`
+        <div class="card">
+          <div class="card-body">
+            <div class="mb-3 text-center justify-content-center align-items-center">
+              <label for="email" class="form-label">Email adresi</label>
+              <input type="email" class="form-control mx-auto" id="email" value="${userInfo.email}" disabled/>
+            </div>
+            <div class="d-flex mb-3 text-center justify-content-center align-items-center">
+              <div class="me-3">
+                <label for="name" class="form-label">İsim</label>
+                <input type="text" class="form-control" id="name" value="${userInfo.uname}"/>
+              </div>
+              <div>
+                <label for="surname" class="form-label">Soyisim</label>
+                <input type="text" class="form-control" id="surname" value="${userInfo.surname}"/>
+              </div>
+            </div>
+            <div class="d-flex mb-3 text-center justify-content-center align-items-center">
+              <div class="me-3">
+                <label for="username" class="form-label">Kullanıcı Adı</label>
+                <input type="text" class="form-control" id="username" value="${userInfo.username}"/>
+              </div>
+              <div>
+                <label for="password" class="form-label">Şifre</label>
+                <input type="password" class="form-control" id="password" value="${userInfo.password}"/>
+              </div>
+            </div>
+            <div class="mb-3 text-center justify-content-center align-items-center">
+              <div>
+                <label for="registerDate" class="form-label">Kayıt Tarihi: </label>
+                <label class="form-label m-auto" id="registerDate">${userInfo.registerDate}</label>
+              </div>
+            </div>
+            <div class="d-flex justify-content-center align-items-center">
+              <button type="submit" class="btn btn-primary" onclick="applyChanges()">Değişiklikleri Kaydet</button>
+            </div>
+          </div>
+        </div>
+        <h6><a href="#" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">Hesabımı Sil</a></h6>
+        `);
+        $(".modal-footer").append(`
+          <button type="button" class="btn btn-danger" onclick="deleteAccount(${userInfo.userID})">Hesabı Sil</button>
+        `);
+      }
+
+      function getOrderHistory() {
+        $.get("http://localhost:8081/api/orders/getUserOrders?userID=" + userInfo.userID).then(function (data) {
+          data.map((order) => {
+            order.orderDate = order.orderDate.replace("T", " ");
+            $(".profileHistory").append(`
+            <div class="card historyCard">
+              <div class="card-body">
+                <p><b>Sipariş No:</b> ${order.orderID}</p>
+                <p><b>Ürün/Ürünler:</b> ${order.productNames}</p>
+                <p><b>Toplam Tutar:</b> ${order.price}₺</p>
+                <p><b>Sipariş Tarihi:</b> ${order.orderDate}</p>
+              </div>
+              <div class="card-footer">
+                <a class="btn btn-outline-danger" onclick="deleteOrder(${order.orderID})">Sil</a>
+              </div>
+            </div>
+          `);
+          });
+        });
+      }
+
+      function applyChanges() {
+        var newUserInfo = userInfo;
+        newUserInfo.uname = document.getElementById("name").value;
+        newUserInfo.surname = document.getElementById("surname").value;
+        newUserInfo.username = document.getElementById("username").value;
+        newUserInfo.password = document.getElementById("password").value;
+        $.ajax({
+          url: "http://localhost:8081/api/user/update",
+          type: "PUT",
+          dataType: "json",
+          contentType: "application/json;charset=utf-8",
+          data: JSON.stringify(newUserInfo),
+          success: function (data) {
+            console.log(data);
+            localStorage.setItem("loggedUser", JSON.stringify(data));
+            alert("Bilgiler Güncellendi");
+            window.location.reload();
+          },
+        });
+      }
+
+      function deleteOrder(orderID) {
+        $.ajax({
+          url: "http://localhost:8081/api/orders/deleteOrder?orderID=" + orderID,
+          type: "DELETE",
+          success: function (data) {
+            alert("Geçmiş Sipariş Silindi");
+            location.reload();
+          },
+        });
+      }
+      function deleteAccount(userID) {
+        $.ajax({
+          url: "http://localhost:8081/api/user/delete?userID=" + userID,
+          type: "DELETE",
+          success: function (data) {
+            userInfo = [];
+            localStorage.setItem("loggedUser", JSON.stringify(userInfo));
+            cart = [];
+            localStorage.setItem("cart", JSON.stringify(cart));
+            alert("Hesabınız Silindi.");
+            window.location.href = "index.html";
+          },
+        });
+      }
+      function logout() {
+        userInfo = [];
+        localStorage.setItem("loggedUser", JSON.stringify(userInfo));
+        cart = [];
+        localStorage.setItem("cart", JSON.stringify(cart));
+        setTimeout(function () {
+          window.location.href = "index.html";
+        }, 2000);
+      }
+    </script>
+  </body>
+</html>

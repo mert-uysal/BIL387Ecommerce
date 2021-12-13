@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
+      integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrendZone</title>
+  </head>
+  <body onload="getProducts()">
+    <nav class="navbar">
+      <div class="container">
+        <h4 style="margin-bottom: 0"><a href="index.html" style="text-decoration: none; color: inherit">TrendZone</a></h4>
+        <div class="userInfo"></div>
+      </div>
+    </nav>
+
+    <div class="allProducts container"></div>
+
+    <!-- logout modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="logoutModalLabel">Çıkış Yapılıyor...</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">Design By Necmettin Mert Uysal</footer>
+
+    <script>
+      var cart = [];
+      var tempCart = [];
+      var totalProductCount = 0;
+
+      function getProducts() {
+        var userInfo = JSON.parse(localStorage.getItem("loggedUser"));
+        if (!jQuery.isEmptyObject(userInfo)) {
+          $(".userInfo").append(`
+            <div style="cursor:pointer; margin: 5px 20px" onclick="redirectCart()">
+              <i class="fas fa-shopping-cart" style="font-size: 15px; color: white"></i>
+              <span id="countCart" style="color: white; font-size:13px">Sepet<span>
+            </div>
+
+            <div style="margin: 5px 0;cursor: pointer" class="dropdown">
+              <i class="far fa-user ms-2 me-1" style="font-size: 15px; color: white"></i>
+              <span style="color: white; font-size:13px">${userInfo.username}</span>
+              <div class="dropdown-content">
+                <a href="myProfile.html">Hesabım</a>
+                <a href="#" data-bs-toggle="modal" data-bs-target="#logoutModal" onclick="logout()">Çıkış</a>
+              </div>
+            </div>
+          `);
+        } else {
+          $(".userInfo").append(`
+          <a href="register.html" class="navBtn btn btn-sm btn-outline-primary me-2">Kayıt Ol</a>
+          <a href="login.html" class="navBtn btn btn-sm btn-outline-primary">Giriş Yap</a>`);
+        }
+        $.get("http://localhost:8081/api/products/getAll", function (data) {
+          data.map((product) => {
+            $(".allProducts").append(`
+            <div class="card productCard">
+              <img width="60%" class="productImage m-auto" src="${product.productImage}" />
+              <div class="card-body">
+                <h6 class="productName m-auto">${product.productName}</h6>
+                <p class="productStock">Stok: ${product.productInStock} Adet Kaldı</p>
+                <div class="d-flex position-absolute product-priceField">
+                  <span class="productPrice p-1">${product.productPrice}₺</span>
+                  <a id="${product.productID}" onclick="addToCart(${product.productID})" class="addCard btn btn-sm btn-outline-primary ms-auto p-1">
+                    Sepete Ekle
+                    <i class="fas fa-cart-arrow-down"></i>
+                  </a>
+                </div>
+              </div>
+            </div>`);
+          });
+        });
+
+        if (!jQuery.isEmptyObject(JSON.parse(localStorage.getItem("cart")))) {
+          cart = JSON.parse(localStorage.getItem("cart"));
+          cart.forEach((item) => {
+            totalProductCount += item.itemCount;
+          });
+          document.getElementById("countCart").innerHTML = "Sepet (" + totalProductCount + ")";
+        }
+      }
+      function addToCart(productID) {
+        if (jQuery.isEmptyObject(JSON.parse(localStorage.getItem("loggedUser")))) {
+          alert("Önce Giriş Yapmalısınız");
+        } else {
+          $.get("http://localhost:8081/api/products/getById?productID=" + productID).then(function (data) {
+            data.itemCount = 1;
+            cart.push(data);
+            makeCartUnique();
+            totalProductCount = 0;
+            JSON.parse(localStorage.getItem("cart")).forEach((item) => {
+              totalProductCount += item.itemCount;
+            });
+            document.getElementById("countCart").innerHTML = "Sepet (" + totalProductCount + ")";
+          });
+        }
+      }
+      function makeCartUnique() {
+        for (let i = 0; i < cart.length; i++) {
+          for (let j = i + 1; j < cart.length; j++) {
+            if (cart[i].productID === cart[j].productID) {
+              cart[i].itemCount++;
+              cart.splice(j, 1);
+            }
+          }
+        }
+        localStorage.setItem("cart", JSON.stringify(cart));
+      }
+      function redirectCart() {
+        if (cart.length === 0) {
+          alert("Sepet Boş");
+        } else {
+          window.location.href = "order.html";
+        }
+      }
+      function logout() {
+        userInfo = [];
+        localStorage.setItem("loggedUser", JSON.stringify(userInfo));
+        cart = [];
+        localStorage.setItem("cart", JSON.stringify(cart));
+        setTimeout(function () {
+          window.location.href = "index.html";
+        }, 2000);
+      }
+    </script>
+  </body>
+</html>
